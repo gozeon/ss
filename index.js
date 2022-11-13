@@ -1,52 +1,35 @@
 #!/usr/bin/env node
-import path from 'node:path'
-import fs from 'node:fs'
+const path = require('path')
+const fs = require('fs')
 
-// https://stackoverflow.com/a/67984316
-import createDebugMessages from 'debug'
-const debug = createDebugMessages('ss')
-import minimist from 'minimist';
-const argv = minimist(process.argv.slice(2))
+const debug = require('debug')('ss')
+const argv = require('minimist')(process.argv.slice(2))
+const chalk = require('chalk')
+const figlet = require('figlet')
 debug('argv', argv)
+const glob = require('fast-glob')
+const ignore = require('ignore')()
+const decache = require('decache')
 
-import chalk  from 'chalk'
-import figlet  from 'figlet'
-import glob  from 'fast-glob'
-import Ignore  from 'ignore'
-const ignore = Ignore()
-import decache  from 'decache'
-
-import Koa from 'koa'
+const Koa = require('koa')
 const server = new Koa()
-import Router from 'koa-router'
+const Router = require('koa-router')
 
-// import compose from 'koa-compose'
-import chokidar from 'chokidar'
-
+const compose = require('koa-compose')
+const chokidar = require('chokidar')
 const port = process.env.PORT || argv.port || 3000
 const host = process.env.HOST || argv.host || '0.0.0.0'
 const cwd = process.cwd()
 
-let router
+let router, middlewarePath
 const methods = ['HEAD', 'OPTIONS', 'GET', 'PUT', 'PATCH', 'POST', 'DELETE']
 
 debug('cwd: ', cwd)
 
 const watcher = chokidar.watch(cwd)
-// server.use(compose([require('koa-logger')(), require('koa-body')()]))
-
-// Error Handle
-server.use(async function handleError(ctx, next) {
-  try {
-    await next()
-  } catch (err) {
-    ctx.status = err.status || 500
-    ctx.body = err.message + err.stack
-  }
-})
 
 watcher.on('ready', function () {
-  console.log('Watching...')
+  console.log('Watching Routers...')
 
   watcher.on('all', function (eventName, p) {
     console.log(`[${eventName}] ${p}`)
@@ -66,6 +49,26 @@ watcher.on('ready', function () {
     logRouters()
   })
 })
+
+/**
+ * config middlewares
+ */
+function loadMiddlewares() {
+  try {
+    const tmpPath = path.join(cwd, 'middleware')
+    debug('loadMiddlewares middlewarePath', tmpPath)
+    middlewarePath = require.resolve(tmpPath)
+    debug('loadMiddlewares resolve', tmpPath)
+    server.use(require(middlewarePath))
+  } catch (e) {
+    debug('loadMiddlewares error', e)
+    if (e?.code !== 'MODULE_NOT_FOUND') {
+      console.log(e?.message)
+    }
+  }
+}
+
+loadMiddlewares()
 
 /**
  * example:
@@ -111,7 +114,7 @@ function dynamicRouter() {
     cwd: cwd,
     onlyFiles: true,
     dot: true,
-    ignore: ['**/node_modules/**'],
+    ignore: ['**/node_modules/**', '**/middleware/**'],
   })
   debug('results: ', results)
   const files = ignore.filter(results)
@@ -136,6 +139,7 @@ function logRouters() {
   // console.clear()
   console.log(figlet.textSync('Simple Server'))
   console.log(`HTTP Listen: ${chalk.underline(`http://${host}:${port}`)}`)
+  middlewarePath && console.log(`Middleware Path: ${middlewarePath}`)
   router.stack.length && console.log(`Routers: `)
   for (let i = 0; i < router.stack.length; i++) {
     console.log(
