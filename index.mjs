@@ -1,22 +1,28 @@
 #!/usr/bin/env node
-const path = require('path')
-const fs = require('fs')
+import path from 'node:path'
+import fs from 'node:fs'
 
-const debug = require('debug')('ss')
-const argv = require('minimist')(process.argv.slice(2))
-const chalk = require('chalk')
-const figlet = require('figlet')
+// https://stackoverflow.com/a/67984316
+import createDebugMessages from 'debug'
+const debug = createDebugMessages('ss')
+import minimist from 'minimist';
+const argv = minimist(process.argv.slice(2))
 debug('argv', argv)
-const glob = require('fast-glob')
-const ignore = require('ignore')()
-const decache = require('decache')
 
-const Koa = require('koa')
+import chalk  from 'chalk'
+import figlet  from 'figlet'
+import glob  from 'fast-glob'
+import Ignore  from 'ignore'
+const ignore = Ignore()
+import decache  from 'decache'
+
+import Koa from 'koa'
 const server = new Koa()
-const Router = require('koa-router')
+import Router from 'koa-router'
 
-const compose = require('koa-compose')
-const chokidar = require('chokidar')
+// import compose from 'koa-compose'
+import chokidar from 'chokidar'
+
 const port = process.env.PORT || argv.port || 3000
 const host = process.env.HOST || argv.host || '0.0.0.0'
 const cwd = process.cwd()
@@ -27,7 +33,7 @@ const methods = ['HEAD', 'OPTIONS', 'GET', 'PUT', 'PATCH', 'POST', 'DELETE']
 debug('cwd: ', cwd)
 
 const watcher = chokidar.watch(cwd)
-server.use(compose([require('koa-logger')(), require('koa-body')()]))
+// server.use(compose([require('koa-logger')(), require('koa-body')()]))
 
 // Error Handle
 server.use(async function handleError(ctx, next) {
