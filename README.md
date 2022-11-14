@@ -2,6 +2,8 @@
 
 Simple Server
 
+**IMPORTANT:** `v2` is ESM, if you use commonjs, see `v1`
+
 ![](https://github.com/gozeon/ss/raw/master/Simple%20Server.png)
 
 # install
