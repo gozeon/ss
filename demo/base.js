@@ -1,3 +1,3 @@
-module.exports = (ctx) => {
-  ctx.body = 'hello world'
+export default (ctx) => {
+    ctx.body = 'hello world'
 }

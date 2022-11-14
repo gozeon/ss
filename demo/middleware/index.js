@@ -1,6 +1,6 @@
-const compose = require('koa-compose')
-module.exports = compose([
-  require('./error')(),
-  require('koa-logger')(),
-  require('koa-body')['koaBody'](),
-])
+import compose from 'koa-compose'
+import error from './error.js'
+import logger from 'koa-logger'
+import { koaBody } from 'koa-body'
+
+export default compose([error(), logger(), koaBody()])

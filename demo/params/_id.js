@@ -1,3 +1,3 @@
-module.exports = (ctx) => {
-  ctx.body = ctx.request.params
+export default (ctx) => {
+    ctx.body = ctx.request.params
 }

@@ -1,3 +1,3 @@
-module.exports = (ctx) => {
-  ctx.throw(400)
+export default (ctx) => {
+    ctx.throw(400)
 }

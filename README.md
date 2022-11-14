@@ -20,8 +20,8 @@ touch time.js
 time.js
 
 ```js
-module.exports = (ctx) => {
-  ctx.body = new Date()
+export default (ctx) => {
+    ctx.body = new Date()
 }
 ```
 
@@ -52,8 +52,6 @@ use `--port` , `--host` or `PORT=3000 HOST=0.0.0.0 ss`
 ### params
 
 `_id.js` -> `../:id`
-
-
 
 # referece
 
