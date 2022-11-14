@@ -53,7 +53,7 @@ async function loadMiddlewares() {
         server.use(m.default)
     } catch (e) {
         debug('loadMiddlewares error', e)
-        if (e?.code !== 'MODULE_NOT_FOUND') {
+        if (e?.code !== 'ERR_MODULE_NOT_FOUND') {
             console.log(e?.message)
         }
     }
