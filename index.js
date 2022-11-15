@@ -61,7 +61,6 @@ watcher.on('ready', function () {
 function appUse(name, middleware) {
     middleware._name = name
     const idx = server.middleware.findIndex((m) => m._name == name)
-    console.log('🚀 ~ file: index.js ~ line 51 ~ appUse ~ idx', idx)
     debug('find middleware <%s> index: %s', name, idx)
     idx > -1 && server.middleware.splice(idx, 1)
     if (name === 'middleware') {
@@ -69,6 +68,7 @@ function appUse(name, middleware) {
     } else {
         server.use(convert(middleware))
     }
+    debug('app middleware', server.middleware)
 }
 
 /**
