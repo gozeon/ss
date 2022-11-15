@@ -10,36 +10,76 @@ import glob from 'fast-glob'
 import Ignore from 'ignore'
 import Koa from 'koa'
 import Router from 'koa-router'
+import convert from 'koa-convert'
 import chokidar from 'chokidar'
 
 const debug = Debug('ss')
 const argv = minimist(process.argv.slice(2))
 debug('argv', argv)
-const ignore = Ignore()
 const server = new Koa()
 
 const port = process.env.PORT || argv.port || 3000
 const host = process.env.HOST || argv.host || '0.0.0.0'
 const cwd = process.cwd()
 
-let router, middlewarePath
+let ignore, router, middlewarePath
 const methods = ['HEAD', 'OPTIONS', 'GET', 'PUT', 'PATCH', 'POST', 'DELETE']
 
 debug('cwd: ', cwd)
 
-const watcher = chokidar.watch(cwd)
+const watcher = chokidar.watch(cwd, {
+    ignored: ['**/node_modules/**'],
+})
 
 watcher.on('ready', function () {
-    console.log('Watching Routers...')
+    console.log('Watching...')
 
     watcher.on('all', async function (eventName, p) {
+        if (ignore.ignores(p.replace(cwd + path.sep, ''))) {
+            return
+        }
+
+        if (/(middleware)/.test(p)) {
+            console.log('Reloading middleware...')
+            await loadMiddlewares()
+            console.log('Middleware reloaded.')
+            return
+        }
         console.log(`[${eventName}] ${p}`)
-        console.log('Reloading server...')
+        console.log('Reloading router...')
         dynamicRouter()
-        console.log('Server reloaded.')
+        console.log('Router reloaded.')
         logRouters()
     })
 })
+
+/**
+ *
+ * @param {*} name
+ * @param {*} middleware
+ */
+function appUse(name, middleware) {
+    middleware._name = name
+    const idx = server.middleware.findIndex((m) => m._name == name)
+    console.log('🚀 ~ file: index.js ~ line 51 ~ appUse ~ idx', idx)
+    debug('find middleware <%s> index: %s', name, idx)
+    idx > -1 && server.middleware.splice(idx, 1)
+    if (name === 'middleware') {
+        server.middleware.unshift(middleware)
+    } else {
+        server.use(convert(middleware))
+    }
+}
+
+/**
+ * @see https://ar.al/2021/02/22/cache-busting-in-node.js-dynamic-esm-imports/
+ * @see https://github.com/sindresorhus/import-fresh/issues/22
+ * @param {*} path
+ * @returns
+ */
+function nocacheImport(path) {
+    return import(`${path}?t=${Date.now()}`)
+}
 
 /**
  * config middlewares
@@ -48,9 +88,9 @@ async function loadMiddlewares() {
     try {
         const tmpPath = path.join(cwd, 'middleware', 'index.js')
         debug('loadMiddlewares middlewarePath', tmpPath)
-        const m = await import(tmpPath)
+        const m = await nocacheImport(tmpPath)
         middlewarePath = tmpPath
-        server.use(m.default)
+        appUse('middleware', m.default)
     } catch (e) {
         debug('loadMiddlewares error', e)
         if (e?.code !== 'ERR_MODULE_NOT_FOUND') {
@@ -100,6 +140,7 @@ function getCurrentPath(target) {
  * Dynamic config routers
  */
 function dynamicRouter() {
+    ignore = Ignore()
     const __SS_IGNORE__ = path.join(cwd, '.ssignore')
     if (fs.existsSync(__SS_IGNORE__)) {
         ignore.add(fs.readFileSync(__SS_IGNORE__).toString())
@@ -121,13 +162,12 @@ function dynamicRouter() {
         const current = getCurrentPath(files[i])
         debug('dynamic routers', current)
         router[current.method](current.routePath, async (ctx, next) => {
-            // @doc https://ar.al/2021/02/22/cache-busting-in-node.js-dynamic-esm-imports/
-            await import(`${current.modulePath}?cache=${Date.now()}`).then(
-                (m) => m.default(ctx, next)
+            await nocacheImport(current.modulePath).then((m) =>
+                m.default(ctx, next)
             )
         })
     }
-    server.use(router.routes())
+    appUse('router', router.routes())
 }
 
 dynamicRouter()
