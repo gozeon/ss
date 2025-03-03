@@ -1,3 +1,5 @@
+# 为了更好的避免一些模块问题，不推荐使用这个命令行了，使用更好理解的目录管理方式，参考：https://github.com/gozeon/code-collections/tree/master/ss-next
+
 # ss
 
 Simple Server
